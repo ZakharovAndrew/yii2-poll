@@ -1,0 +1,52 @@
+<?php
+
+use yii\db\Migration;
+
+/**
+ * Handles the creation of table `poll`.
+ * 
+ * @author Andrew Zakharov
+ * @since 1.0.0
+ */
+class m260626_000001_create_poll_table extends Migration
+{
+    /**
+     * {@inheritdoc}
+     */
+    public function safeUp()
+    {
+        $this->createTable('poll', [
+            'id' => $this->primaryKey(),
+            'category_id' => $this->integer()->null(),
+            'question' => $this->text()->notNull(),
+            'image_url' => $this->string(255)->null(),
+            'image_position' => "ENUM('before', 'after') DEFAULT 'before'",
+            'status' => $this->tinyInteger(1)->defaultValue(1),
+            'priority' => $this->integer()->defaultValue(0),
+            'start_date' => $this->dateTime()->null(),
+            'end_date' => $this->dateTime()->null(),
+            'allowed_statuses' => $this->text()->null(),
+            'denied_statuses' => $this->text()->null(),
+            'widget_config' => $this->text()->null(),
+            'show_results_after_vote' => $this->boolean()->defaultValue(false),
+            'created_by' => $this->integer()->null(),
+            'created_at' => $this->dateTime()->defaultExpression('CURRENT_TIMESTAMP'),
+            'updated_at' => $this->dateTime()->defaultExpression('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
+        ]);
+
+        // Indexes for performance
+        $this->createIndex('idx_poll_status', 'poll', 'status');
+        $this->createIndex('idx_poll_priority', 'poll', 'priority');
+        $this->createIndex('idx_poll_category', 'poll', 'category_id');
+        $this->createIndex('idx_poll_dates', 'poll', ['start_date', 'end_date']);
+        $this->createIndex('idx_poll_created_by', 'poll', 'created_by');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function safeDown()
+    {
+        $this->dropTable('poll');
+    }
+}

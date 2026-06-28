@@ -1,6 +1,6 @@
 {
     "name": "zakharov-andrew/yii2-poll",
-    "description": "Yii2 module for polls with advanced features",
+    "description": "Yii2 module for polls with advanced features: conditional questions, categories, priorities, roles and statuses based access",
     "type": "yii2-extension",
     "keywords": ["yii2", "poll", "survey", "module", "widget", "yii2-widget"],
     "license": "MIT",
@@ -13,11 +13,11 @@
     ],
     "support": {
         "issues": "https://github.com/ZakharovAndrew/yii2-poll/issues",
-        "source": "https://github.com/ZakharovAndrew/yii2-poll"
+        "source": "https://github.com/ZakharovAndrew/yii2-poll",
+        "docs": "https://github.com/ZakharovAndrew/yii2-poll/blob/main/README.md"
     },
     "require": {
-        "php": ">=7.4",
-        "firebase/php-jwt" : "*"
+        "php": ">=7.4"
     },
     "autoload": {
         "psr-4": {

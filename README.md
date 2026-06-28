@@ -85,7 +85,7 @@ Simply place the widget anywhere in your view:
 <?= \ZakharovAndrew\poll\widgets\PollWidget::widget() ?>
 ```
 
-Widget with Options
+### Widget with Options
 
 ```php
 <?= \ZakharovAndrew\poll\widgets\PollWidget::widget([
@@ -97,6 +97,33 @@ Widget with Options
     'pollId' => 5,                           // Show a specific poll (ignores rotation)
 ]) ?>
 ```
+
+### AJAX Voting
+
+Voting is handled via AJAX by default – no page reload required. The widget automatically includes the necessary JavaScript.
+
+## 🌟 Features
+
+- One poll per widget – clean, focused user experience.
+- Multiple polls – automatic rotation between polls.
+- Up to 4 answers per poll (configurable).
+- Image support – attach an image to the question, placed before or after.
+- Date range – set start_date and end_date; polls are active only within that period (unlimited if not set).
+- Status-based access – allow or deny access based on user status (active, blocked, guest, etc.) using JSON fields allowed_statuses and denied_statuses.
+- Role-based access – integrate with zakharov-andrew/yii2-user to restrict polls to specific roles.
+- Conditional questions – show follow-up questions based on previous answers.
+- Categories – organize polls into groups with icons and colors.
+- Priority – assign numeric priority (higher = more important) to control display order.
+- Rotation strategies:
+- - `priority` – sorted by priority descending.
+- - `random` – random selection.
+- - `smart` – priority + votes count (fewer votes = higher priority).
+- Customizable appearance – background color/image, question styles, answer colors, result bar styles, container styling.
+- AJAX voting – seamless user experience.
+- Statistics – view vote counts and percentages.
+- Unique vote protection – prevents multiple votes per user (by user_id, ip_address, or session_id).
+- Snooze – users can postpone a poll (optional, can be implemented).
+- Progress indicator – shows how many polls are completed (optional).
 
 ## 👥 Contributing
 

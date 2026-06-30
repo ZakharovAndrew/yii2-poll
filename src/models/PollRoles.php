@@ -11,6 +11,7 @@ use yii\db\ActiveRecord;
  * @property int $id
  * @property int $poll_id
  * @property int $role_id
+ * @property int $subject_id
  * @property string $created_at
  *
  * @property Poll $poll
@@ -60,9 +61,9 @@ class PollRoles extends ActiveRecord
     {
         return [
             [['poll_id', 'role_id'], 'required'],
-            [['poll_id', 'role_id'], 'integer'],
+            [['poll_id', 'role_id', 'subject_id'], 'integer'],
             [['created_at'], 'safe'],
-            [['poll_id', 'role_id'], 'unique', 'targetAttribute' => ['poll_id', 'role_id']],
+            // [['poll_id', 'role_id'], 'unique', 'targetAttribute' => ['poll_id', 'role_id']],
             [['poll_id'], 'exist', 'targetClass' => Poll::class, 'targetAttribute' => 'id'],
         ];
     }

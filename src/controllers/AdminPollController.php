@@ -1,25 +1,24 @@
 <?php
 
-namespace ZakharovAndrew\poll\controllers;
+namespace ZakharovAndrew\poll\controllers\admin;
 
 use Yii;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\AccessControl;
 use yii\filters\VerbFilter;
-use yii\data\ActiveDataProvider;
 use ZakharovAndrew\poll\models\Poll;
 use ZakharovAndrew\poll\models\PollAnswer;
 use ZakharovAndrew\poll\models\PollCategory;
 use ZakharovAndrew\poll\models\PollSearch;
 
 /**
- * Admin poll controller for managing polls.
+ * Admin controller for managing polls.
  *
  * @author Andrew Zakharov
  * @since 1.0.0
  */
-class AdminPollController extends Controller
+class PollController extends Controller
 {
     /**
      * {@inheritdoc}
@@ -62,56 +61,24 @@ class AdminPollController extends Controller
     }
 
     /**
-     * Displays a single poll with stats.
-     *
-     * @param int $id
-     * @return string
-     * @throws NotFoundHttpException
-     */
-    public function actionView($id)
-    {
-        $poll = $this->findModel($id);
-        $stats = $poll->getVoteStats();
-
-        return $this->render('view', [
-            'poll' => $poll,
-            'stats' => $stats,
-        ]);
-    }
-
-    /**
      * Creates a new poll.
+     * If creation is successful, redirects to the index page.
      *
      * @return string|\yii\web\Response
      */
     public function actionCreate()
     {
-        $poll = new Poll();
-        // Initialize 4 empty answers by default
-        $answers = array_fill(0, 4, new PollAnswer());
+        $model = new Poll();
+        $answers = $this->createEmptyAnswers();
 
-        if ($poll->load(Yii::$app->request->post()) && $poll->save()) {
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
             // Save answers
-            $answersData = Yii::$app->request->post('PollAnswer', []);
-            foreach ($answersData as $index => $data) {
-                if (!empty($data['answer_text'])) {
-                    $answer = new PollAnswer();
-                    $answer->poll_id = $poll->id;
-                    $answer->answer_text = $data['answer_text'];
-                    $answer->sort_order = $data['sort_order'] ?? $index;
-                    $answer->save();
-                }
-            }
-
+            $this->saveAnswers($model->id, Yii::$app->request->post('PollAnswer', []));
             Yii::$app->session->setFlash('success', 'Poll created successfully.');
-            return $this->redirect(['view', 'id' => $poll->id]);
+            return $this->redirect(['index']);
         }
 
-        return $this->render('form', [
-            'poll' => $poll,
-            'answers' => $answers,
-            'categories' => PollCategory::getActiveList(),
-        ]);
+        return $this->render('create', $this->getViewParams($model, $answers));
     }
 
     /**
@@ -119,52 +86,25 @@ class AdminPollController extends Controller
      *
      * @param int $id
      * @return string|\yii\web\Response
-     * @throws NotFoundHttpException
+     * @throws NotFoundHttpException if poll not found
      */
     public function actionUpdate($id)
     {
-        $poll = $this->findModel($id);
-        $answers = $poll->answers;
-        // Ensure we have at least 4 slots for UI
-        while (count($answers) < 4) {
-            $answers[] = new PollAnswer();
-        }
+        $model = $this->findModel($id);
+        $answers = $this->getExistingAnswers($id);
 
-        if ($poll->load(Yii::$app->request->post()) && $poll->save()) {
-            // Update answers
-            $answersData = Yii::$app->request->post('PollAnswer', []);
-            $existingIds = [];
-            foreach ($answersData as $index => $data) {
-                if (!empty($data['id']) && ($answer = PollAnswer::findOne($data['id'])) && $answer->poll_id == $poll->id) {
-                    $answer->answer_text = $data['answer_text'];
-                    $answer->sort_order = $data['sort_order'] ?? $index;
-                    $answer->save();
-                    $existingIds[] = $answer->id;
-                } elseif (!empty($data['answer_text'])) {
-                    $answer = new PollAnswer();
-                    $answer->poll_id = $poll->id;
-                    $answer->answer_text = $data['answer_text'];
-                    $answer->sort_order = $data['sort_order'] ?? $index;
-                    $answer->save();
-                    $existingIds[] = $answer->id;
-                }
-            }
-            // Delete removed answers (those not in the posted data)
-            PollAnswer::deleteAll(['and', ['poll_id' => $poll->id], ['not in', 'id', $existingIds]]);
-
+        if ($model->load(Yii::$app->request->post()) && $model->save()) {
+            // Save answers
+            $this->saveAnswers($model->id, Yii::$app->request->post('PollAnswer', []));
             Yii::$app->session->setFlash('success', 'Poll updated successfully.');
-            return $this->redirect(['view', 'id' => $poll->id]);
+            return $this->redirect(['index']);
         }
 
-        return $this->render('form', [
-            'poll' => $poll,
-            'answers' => $answers,
-            'categories' => PollCategory::getActiveList(),
-        ]);
+        return $this->render('update', $this->getViewParams($model, $answers));
     }
 
     /**
-     * Deletes a poll.
+     * Deletes an existing poll.
      *
      * @param int $id
      * @return \yii\web\Response
@@ -172,16 +112,28 @@ class AdminPollController extends Controller
      */
     public function actionDelete($id)
     {
-        $poll = $this->findModel($id);
-
-        if ($poll->getVotes()->exists()) {
-            Yii::$app->session->setFlash('error', 'Cannot delete a poll that has votes.');
-            return $this->redirect(['index']);
-        }
-
-        $poll->delete();
+        $model = $this->findModel($id);
+        $model->delete();
         Yii::$app->session->setFlash('success', 'Poll deleted successfully.');
         return $this->redirect(['index']);
+    }
+
+    /**
+     * Displays poll statistics.
+     *
+     * @param int $id
+     * @return string
+     * @throws NotFoundHttpException
+     */
+    public function actionStats($id)
+    {
+        $model = $this->findModel($id);
+        $stats = $model->getVoteStats();
+
+        return $this->render('stats', [
+            'model' => $model,
+            'stats' => $stats,
+        ]);
     }
 
     /**
@@ -189,13 +141,93 @@ class AdminPollController extends Controller
      *
      * @param int $id
      * @return Poll
-     * @throws NotFoundHttpException
+     * @throws NotFoundHttpException if the model cannot be found
      */
     protected function findModel($id)
     {
-        if (($poll = Poll::findOne($id)) !== null) {
-            return $poll;
+        if (($model = Poll::findOne($id)) !== null) {
+            return $model;
         }
         throw new NotFoundHttpException('The requested poll does not exist.');
+    }
+
+    /**
+     * Returns an array of 4 empty PollAnswer objects.
+     *
+     * @return PollAnswer[]
+     */
+    protected function createEmptyAnswers()
+    {
+        $answers = [];
+        for ($i = 0; $i < 4; $i++) {
+            $answer = new PollAnswer();
+            $answer->sort_order = $i;
+            $answers[] = $answer;
+        }
+        return $answers;
+    }
+
+    /**
+     * Returns existing answers for a poll, or empty placeholders up to 4.
+     *
+     * @param int $pollId
+     * @return PollAnswer[]
+     */
+    protected function getExistingAnswers($pollId)
+    {
+        $existing = PollAnswer::find()
+            ->where(['poll_id' => $pollId])
+            ->orderBy(['sort_order' => SORT_ASC])
+            ->all();
+
+        // Ensure we always have 4 slots
+        while (count($existing) < 4) {
+            $answer = new PollAnswer();
+            $answer->sort_order = count($existing);
+            $existing[] = $answer;
+        }
+
+        return $existing;
+    }
+
+    /**
+     * Saves answers from POST data.
+     *
+     * @param int $pollId
+     * @param array $answersData Array from POST (PollAnswer[0][answer_text], etc.)
+     */
+    protected function saveAnswers($pollId, $answersData)
+    {
+        // Delete existing answers
+        PollAnswer::deleteAll(['poll_id' => $pollId]);
+
+        foreach ($answersData as $index => $data) {
+            if (empty($data['answer_text'])) {
+                continue; // Skip empty answers
+            }
+            $answer = new PollAnswer();
+            $answer->poll_id = $pollId;
+            $answer->answer_text = $data['answer_text'];
+            $answer->sort_order = $data['sort_order'] ?? $index;
+            $answer->save();
+        }
+    }
+
+    /**
+     * Returns common view parameters.
+     *
+     * @param Poll $model
+     * @param PollAnswer[] $answers
+     * @return array
+     */
+    protected function getViewParams($model, $answers)
+    {
+        return [
+            'model' => $model,
+            'answers' => $answers,
+            'statusesList' => Poll::getStatusesList(),
+            'categoriesList' => PollCategory::getActiveList(),
+            'imagePositions' => Poll::getImagePositionsList(),
+        ];
     }
 }
